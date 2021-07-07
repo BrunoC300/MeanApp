@@ -25,6 +25,7 @@ const storage = multer.diskStorage({
   },
 });
 
+//ADD POST
 router.post(
   "",
   multer({ storage: storage }).single("image"),
@@ -47,15 +48,32 @@ router.post(
   }
 );
 
+//GET ALL POSTS
 router.get("", (req, res, next) => {
-  Post.find().then((documents) => {
-    res.status(200).json({
-      message: "Posts fetched successfully!",
-      posts: documents,
+  const pageSize = +req.query.pagesize; // O + converte string para number
+  const currentPage = +req.query.page;
+  const postQuery = Post.find();
+  let fetchedPosts;
+  if (pageSize && currentPage) {
+    //Salta os items das páginas anteriores
+    postQuery.skip(pageSize * (currentPage - 1)).limit(pageSize);
+  }
+  postQuery
+    .find()
+    .then((documents) => {
+      fetchedPosts = documents;
+      return Post.count();
+    })
+    .then((count) => {
+      res.status(200).json({
+        message: "Posts fetched successfully!",
+        posts: fetchedPosts,
+        maxPosts: count,
+      });
     });
-  });
 });
 
+//Get 1 post
 router.get("/:id", (req, res, next) => {
   Post.findById(req.params.id).then((post) => {
     if (post) {
@@ -68,6 +86,7 @@ router.get("/:id", (req, res, next) => {
   });
 });
 
+//Edit 1 post
 router.put(
   "/:id",
   multer({ storage: storage }).single("image"),
@@ -90,6 +109,7 @@ router.put(
   }
 );
 
+//Delete 1 post
 router.delete("/:id", (req, res, next) => {
   Post.deleteOne({ _id: req.params.id }).then((result) => {
     console.log(result);
